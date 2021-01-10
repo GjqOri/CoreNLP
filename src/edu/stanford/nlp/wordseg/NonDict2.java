@@ -64,6 +64,23 @@ public class NonDict2  {
    */
   public static void main(String[] args) throws IOException {
     Properties props = StringUtils.argsToProperties(args, SeqClassifierFlags.flagsToNumArgs());
+
+    /*
+    // TODO: refactor this into a util?
+    // TODO: whitespace reader
+    boolean foundReader = false;
+    for (String propKey : props.stringPropertyNames()) {
+      if (propKey.equalsIgnoreCase("plainTextDocumentReaderAndWriter")) {
+        foundReader = true;
+        break;
+      }
+    }
+    if (!foundReader) {
+      // this doesn't exist
+      props.setProperty("plainTextDocumentReaderAndWriter", "edu.stanford.nlp.sequences.WhitespaceDocumentReaderAndWriter");
+    }
+    */
+
     SeqClassifierFlags flags = new SeqClassifierFlags(props);
 
     String inputFilename = flags.textFile;
@@ -77,6 +94,7 @@ public class NonDict2  {
     FileReader fin = new FileReader(inputFilename);
     // for some weird syntax reason this can't take the place of ': iterable'
     Iterable<List<CoreLabel>> iterable = () -> readerAndWriter.getIterator(fin);
+    List<CoreLabel> prevSentence = null;
     for (List<CoreLabel> sentence : iterable) {
       for (int i = 0; i < sentence.size() - 1; ++i) {
         String prevWord = sentence.get(i).value();
@@ -84,6 +102,13 @@ public class NonDict2  {
         String bigram = prevWord.substring(prevWord.length() - 1) + nextWord.substring(0, 1);
         splitBigrams.add(bigram);
       }
+      if (prevSentence != null) {
+        String prevWord = prevSentence.get(prevSentence.size() - 1).value();
+        String nextWord = sentence.get(0).value();
+        String bigram = prevWord.substring(prevWord.length() - 1) + nextWord.substring(0, 1);
+        splitBigrams.add(bigram);
+      }
+      prevSentence = sentence;
     }
     fin.close();
 
